@@ -370,8 +370,10 @@ pub async fn command_upload_release_distributions(args: &ArgMatches) -> Result<(
     for f in &missing {
         println!("missing release artifact: {}", f);
     }
-    if !missing.is_empty() && !ignore_missing {
-        return Err(anyhow!("missing release artifacts"));
+    if missing.is_empty() {
+        println!("found all {} release artifacts", wanted_filenames.len());
+    } else if !ignore_missing {
+        return Err(anyhow!("missing {} release artifacts", missing.len()));
     }
 
     let client = OctocrabBuilder::new()
