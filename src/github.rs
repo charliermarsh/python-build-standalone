@@ -42,13 +42,13 @@ async fn fetch_artifact(
 
 async fn upload_release_artifact(
     auth_token: String,
-    release: &Release,
+    release: Option<&Release>,
     filename: String,
     data: Bytes,
     dry_run: bool,
 ) -> Result<()> {
-    if release.assets.iter().any(|asset| asset.name == filename) {
-        println!("release asset {} already present; skipping", filename);
+    if release.is_some_and(|release| release.assets.iter().any(|asset| asset.name == filename)) {
+        println!("release asset {filename} already present; skipping");
         return Ok(());
     }
 
@@ -61,7 +61,7 @@ async fn upload_release_artifact(
 
     url.query_pairs_mut().clear().append_pair("name", &filename);
 
-    println!("uploading to {}", url);
+    println!("uploading to {url}");
 
     // Octocrab doesn't yet support release artifact upload. And the low-level HTTP API
     // forces the use of strings on us. So we have to make our own HTTP client.
@@ -381,12 +381,17 @@ pub async fn command_upload_release_distributions(args: &ArgMatches) -> Result<(
     let releases = repo_handler.releases();
 
     let release = if let Ok(release) = releases.get_by_tag(tag).await {
-        release
+        Some(release)
     } else {
-        return Err(anyhow!(
+        if dry_run {
+            println!("release {} does not exist; continuing in dry-run mode", tag);
+            None
+        } else {
+            return Err(anyhow!(
             "release {} does not exist; create it via GitHub web UI",
             tag
         ));
+        }
     };
 
     let mut digests = BTreeMap::new();
@@ -409,14 +414,14 @@ pub async fn command_upload_release_distributions(args: &ArgMatches) -> Result<(
 
         fs.push(upload_release_artifact(
             token.clone(),
-            &release,
+            release.as_ref(),
             dest.clone(),
             file_data,
             dry_run,
         ));
         fs.push(upload_release_artifact(
             token.clone(),
-            &release,
+            release.as_ref(),
             format!("{}.sha256", dest),
             Bytes::copy_from_slice(format!("{}\n", digest).as_bytes()),
             dry_run,
@@ -439,7 +444,7 @@ pub async fn command_upload_release_distributions(args: &ArgMatches) -> Result<(
 
     upload_release_artifact(
         token.clone(),
-        &release,
+        release.as_ref(),
         "SHA256SUMS".to_string(),
         Bytes::copy_from_slice(shasums.as_bytes()),
         dry_run,
@@ -448,30 +453,34 @@ pub async fn command_upload_release_distributions(args: &ArgMatches) -> Result<(
 
     // Check that content wasn't munged as part of uploading. This once happened
     // and created a busted release. Never again.
-    let release = releases
-        .get_by_tag(tag)
-        .await
-        .map_err(|_| anyhow!("could not find release; this should not happen!"))?;
-    let shasums_asset = release
-        .assets
-        .into_iter()
-        .find(|x| x.name == "SHA256SUMS")
-        .ok_or_else(|| anyhow!("unable to find SHA256SUMs release asset"))?;
+    if dry_run {
+        println!("skipping SHA256SUMs check");
+    } else {
+        let release = releases
+            .get_by_tag(tag)
+            .await
+            .map_err(|_| anyhow!("could not find release; this should not happen!"))?;
+        let shasums_asset = release
+            .assets
+            .into_iter()
+            .find(|x| x.name == "SHA256SUMS")
+            .ok_or_else(|| anyhow!("unable to find SHA256SUMs release asset"))?;
 
-    let mut stream = client
-        .repos(organization, repo)
-        .releases()
-        .stream_asset(shasums_asset.id)
-        .await?;
+        let mut stream = client
+            .repos(organization, repo)
+            .releases()
+            .stream_asset(shasums_asset.id)
+            .await?;
 
-    let mut asset_bytes = Vec::<u8>::new();
+        let mut asset_bytes = Vec::<u8>::new();
 
-    while let Some(chunk) = stream.next().await {
-        asset_bytes.extend(chunk?.as_ref());
-    }
+        while let Some(chunk) = stream.next().await {
+            asset_bytes.extend(chunk?.as_ref());
+        }
 
-    if shasums.as_bytes() != asset_bytes {
-        return Err(anyhow!("SHA256SUM content mismatch; release might be bad!"));
+        if shasums.as_bytes() != asset_bytes {
+            return Err(anyhow!("SHA256SUM content mismatch; release might be bad!"));
+        }
     }
 
     Ok(())
