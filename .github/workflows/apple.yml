@@ -1,10 +1,7 @@
 name: MacOS Python build
 
 on:
-  push:
-  pull_request:
-  schedule:
-    - cron: '13 11 * * *'
+  workflow_dispatch:
 jobs:
   pythonbuild:
     runs-on: 'macos-13'
