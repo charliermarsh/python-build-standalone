@@ -29,16 +29,6 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Create GitHub Release
-        if: ${{ github.event.inputs.dry-run == 'false' }}
-        uses: ncipollo/release-action@v1
-        with:
-          tag: ${{ github.event.inputs.tag }}
-          name: ${{ github.event.inputs.tag }}
-          commit: ${{ github.event.inputs.sha }}
-          prerelease: true
-          body: TBD
-
       - uses: extractions/setup-just@v2
 
       # Perform a release in dry-run mode.

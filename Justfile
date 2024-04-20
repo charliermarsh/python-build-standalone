@@ -58,7 +58,7 @@ release-set-latest-release tag:
   git push origin latest-release
 
 # Create a GitHub release, if it doesn't already exist.
-release-create token commit tag:
+release-create commit tag:
   #!/bin/bash
   set -eo pipefail
 
