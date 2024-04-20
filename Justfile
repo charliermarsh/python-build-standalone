@@ -62,7 +62,13 @@ release token commit tag:
   #!/bin/bash
   set -eo pipefail
 
-  gh release create --prerelease --notes TBD --title {{ tag }} --target {{ commit }} {{ tag }}
+  gh release view {{ tag }}
+  if [ $? -eq 0 ]; then
+    echo "Release {{ tag }} already exists."
+  else
+    echo "Creating release {{ tag }}..."
+    gh release create --prerelease --notes TBD --title {{ tag }} --target {{ commit }} {{ tag }}
+  fi
 
   rm -rf dist
   just release-download-distributions {{token}} {{commit}}

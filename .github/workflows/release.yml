@@ -11,6 +11,8 @@ on:
         type: string
       dry-run:
         description: "Whether to run the release process without actually releasing."
+        default: false
+        required: false
         type: boolean
 
 jobs:
@@ -25,12 +27,12 @@ jobs:
 
       # Perform a release in dry-run mode.
       - run: just release-dry-run ${{ secrets.GITHUB_TOKEN }} ${{ github.event.inputs.sha }} ${{ github.event.inputs.tag }}
-        if: ${{ github.event.inputs.dry-run }}
+        if: ${{ github.event.inputs.dry-run == 'true' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # Perform a release, creating a GitHub release and uploading the relevant artifacts.
       - run: just release ${{ secrets.GITHUB_TOKEN }} ${{ github.event.inputs.sha }} ${{ github.event.inputs.tag }}
-        if: ${{ !github.event.inputs.dry-run }}
+        if: ${{ github.event.inputs.dry-run == 'false' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
