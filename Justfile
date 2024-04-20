@@ -36,7 +36,7 @@ release-upload-distributions token datetime tag:
 
 # "Upload" release artifacts to a GitHub release in dry-run mode (skip upload).
 release-upload-distributions-dry-run token datetime tag:
-  cargo run --release -- upload-release-distributions --token {{token}} --datetime {{datetime}} --tag {{tag}} --dist dist --dry-run
+  cargo run --release -- upload-release-distributions --token {{token}} --datetime {{datetime}} --tag {{tag}} --dist dist --dry_run
 
 release-set-latest-release tag:
   #!/usr/bin/env bash
