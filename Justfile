@@ -34,6 +34,10 @@ release-download-distributions token commit:
 release-upload-distributions token datetime tag:
   cargo run --release -- upload-release-distributions --token {{token}} --datetime {{datetime}} --tag {{tag}} --dist dist
 
+# "Upload" release artifacts to a GitHub release in dry-run mode (skip upload).
+release-upload-distributions-dry-run token datetime tag:
+  cargo run --release -- upload-release-distributions --token {{token}} --datetime {{datetime}} --tag {{tag}} --dist dist --dry-run
+
 release-set-latest-release tag:
   #!/usr/bin/env bash
   set -euxo pipefail
@@ -65,6 +69,16 @@ release token commit tag:
   datetime=$(ls dist/cpython-3.10.*-x86_64-unknown-linux-gnu-install_only-*.tar.gz  | awk -F- '{print $8}' | awk -F. '{print $1}')
   just release-upload-distributions {{token}} ${datetime} {{tag}}
   just release-set-latest-release {{tag}}
+
+# Perform a release in dry-run mode.
+release-dry-run token commit tag:
+  #!/bin/bash
+  set -eo pipefail
+
+  rm -rf dist
+  just release-download-distributions {{token}} {{commit}}
+  datetime=$(ls dist/cpython-3.10.*-x86_64-unknown-linux-gnu-install_only-*.tar.gz  | awk -F- '{print $8}' | awk -F. '{print $1}')
+  just release-upload-distributions-dry-run {{token}} ${datetime} {{tag}}
 
 _download-stats mode:
     build/venv.*/bin/python3 -c 'import pythonbuild.utils as u; u.release_download_statistics(mode="{{mode}}")'
