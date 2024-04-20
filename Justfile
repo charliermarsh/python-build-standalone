@@ -62,8 +62,7 @@ release token commit tag:
   #!/bin/bash
   set -eo pipefail
 
-  gh release view {{ tag }}
-  if [ $? -eq 0 ]; then
+  if gh release view {{ tag }} > /dev/null 2>&1; then
     echo "Release {{ tag }} already exists."
   else
     echo "Creating release {{ tag }}..."
