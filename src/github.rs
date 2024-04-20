@@ -42,12 +42,12 @@ async fn fetch_artifact(
 
 async fn upload_release_artifact(
     auth_token: String,
-    release: Option<&Release>,
+    release: &Release,
     filename: String,
     data: Bytes,
     dry_run: bool,
 ) -> Result<()> {
-    if release.is_some_and(|release| release.assets.iter().any(|asset| asset.name == filename)) {
+    if release.assets.iter().any(|asset| asset.name == filename) {
         println!("release asset {filename} already present; skipping");
         return Ok(());
     }
@@ -63,12 +63,12 @@ async fn upload_release_artifact(
 
     println!("uploading to {url}");
 
-    // Octocrab doesn't yet support release artifact upload. And the low-level HTTP API
-    // forces the use of strings on us. So we have to make our own HTTP client.
-
     if dry_run {
         return Ok(());
     }
+
+    // Octocrab doesn't yet support release artifact upload. And the low-level HTTP API
+    // forces the use of strings on us. So we have to make our own HTTP client.
 
     let response = reqwest::Client::builder()
         .build()?
@@ -381,16 +381,15 @@ pub async fn command_upload_release_distributions(args: &ArgMatches) -> Result<(
     let releases = repo_handler.releases();
 
     let release = if let Ok(release) = releases.get_by_tag(tag).await {
-        Some(release)
+        release
     } else {
-        if dry_run {
-            println!("release {} does not exist; continuing in dry-run mode", tag);
-            None
+        return if dry_run {
+            println!("release {tag} does not exist; exiting dry-run mode...");
+            Ok(())
         } else {
-            return Err(anyhow!(
-            "release {} does not exist; create it via GitHub web UI",
-            tag
-        ));
+            Err(anyhow!(
+                "release {tag} does not exist; create it via GitHub web UI"
+            ))
         }
     };
 
@@ -414,14 +413,14 @@ pub async fn command_upload_release_distributions(args: &ArgMatches) -> Result<(
 
         fs.push(upload_release_artifact(
             token.clone(),
-            release.as_ref(),
+            &release,
             dest.clone(),
             file_data,
             dry_run,
         ));
         fs.push(upload_release_artifact(
             token.clone(),
-            release.as_ref(),
+            &release,
             format!("{}.sha256", dest),
             Bytes::copy_from_slice(format!("{}\n", digest).as_bytes()),
             dry_run,
@@ -444,7 +443,7 @@ pub async fn command_upload_release_distributions(args: &ArgMatches) -> Result<(
 
     upload_release_artifact(
         token.clone(),
-        release.as_ref(),
+        &release,
         "SHA256SUMS".to_string(),
         Bytes::copy_from_slice(shasums.as_bytes()),
         dry_run,
