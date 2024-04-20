@@ -29,12 +29,22 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Create GitHub Release
+        if: ${{ github.event.inputs.dry-run == 'false' }}
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ github.event.inputs.tag }}
+          name: ${{ github.event.inputs.tag }}
+          commit: ${{ github.event.inputs.sha }}
+          prerelease: true
+          body: TBD
+
       - uses: extractions/setup-just@v2
 
       # Perform a release in dry-run mode.
       - run: just release-dry-run ${{ secrets.GITHUB_TOKEN }} ${{ github.event.inputs.sha }} ${{ github.event.inputs.tag }}
         if: ${{ github.event.inputs.dry-run == 'true' }}
 
-      # Perform a release by downloading and then uploading the relevant artifacts.
+      # Perform a release, creating a GitHub release and uploading the relevant artifacts.
       - run: just release-run ${{ secrets.GITHUB_TOKEN }} ${{ github.event.inputs.sha }} ${{ github.event.inputs.tag }}
         if: ${{ github.event.inputs.dry-run == 'false' }}
