@@ -68,7 +68,7 @@ fn main_impl() -> Result<()> {
                 Arg::new("repo")
                     .long("repo")
                     .action(ArgAction::Set)
-                    .default_value("test-release")
+                    .default_value("python-build-standalone")
                     .help("GitHub repository name"),
             ),
     );
