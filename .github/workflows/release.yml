@@ -24,8 +24,10 @@ jobs:
       - uses: Swatinem/rust-cache@v2
 
       # Perform a release in dry-run mode.
-      - run: just release-dry-run "token" ${{ github.event.inputs.sha }} ${{ github.event.inputs.tag }}
+      - run: just release-dry-run ${{ secrets.GITHUB_TOKEN }} ${{ github.event.inputs.sha }} ${{ github.event.inputs.tag }}
         if: ${{ github.event.inputs.dry-run }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # Perform a release, creating a GitHub release and uploading the relevant artifacts.
       - run: just release ${{ secrets.GITHUB_TOKEN }} ${{ github.event.inputs.sha }} ${{ github.event.inputs.tag }}
