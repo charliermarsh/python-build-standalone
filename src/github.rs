@@ -91,7 +91,9 @@ pub async fn command_fetch_release_distributions(args: &ArgMatches) -> Result<()
     let dest_dir = args
         .get_one::<PathBuf>("dest")
         .expect("dest directory should be set");
-    let org = "charliermarsh";
+    let org = args
+        .get_one::<String>("organization")
+        .expect("organization should be set");
     let repo = args.get_one::<String>("repo").expect("repo should be set");
 
     let client = OctocrabBuilder::new()
