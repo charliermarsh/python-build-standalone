@@ -17,31 +17,24 @@ on:
 
 permissions:
   contents: write
-  issues: write
-  pull-requests: write
+  packages: write
 
 jobs:
   release:
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-      - uses: extractions/setup-just@v2
-      - uses: Swatinem/rust-cache@v2
 
-      - run: gh release create --prerelease --notes TBD --title ${{ github.event.inputs.tag }} --target ${{ github.event.inputs.sha }} ${{ github.event.inputs.tag }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: extractions/setup-just@v2
 
       # Perform a release in dry-run mode.
-      - run: GH_TOKEN=$GH_TOKEN just release-dry-run ${{ secrets.GITHUB_TOKEN }} ${{ github.event.inputs.sha }} ${{ github.event.inputs.tag }}
+      - run: just release-dry-run ${{ secrets.GITHUB_TOKEN }} ${{ github.event.inputs.sha }} ${{ github.event.inputs.tag }}
         if: ${{ github.event.inputs.dry-run == 'true' }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Perform a release, creating a GitHub release and uploading the relevant artifacts.
-      - run: GH_TOKEN=$GH_TOKEN just release ${{ secrets.GITHUB_TOKEN }} ${{ github.event.inputs.sha }} ${{ github.event.inputs.tag }}
+      # Perform a release by downloading and then uploading the relevant artifacts.
+      - run: just release-run ${{ secrets.GITHUB_TOKEN }} ${{ github.event.inputs.sha }} ${{ github.event.inputs.tag }}
         if: ${{ github.event.inputs.dry-run == 'false' }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

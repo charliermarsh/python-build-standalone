@@ -57,8 +57,8 @@ release-set-latest-release tag:
 
   git push origin latest-release
 
-# Perform a release.
-release token commit tag:
+# Create a GitHub release, if it doesn't already exist.
+release-create token commit tag:
   #!/bin/bash
   set -eo pipefail
 
@@ -68,6 +68,11 @@ release token commit tag:
     echo "Creating release {{ tag }}..."
     gh release create --prerelease --notes TBD --title {{ tag }} --target {{ commit }} {{ tag }}
   fi
+
+# Perform the release job. Assumes that the release has been created.
+release-run token commit tag:
+  #!/bin/bash
+  set -eo pipefail
 
   rm -rf dist
   just release-download-distributions {{token}} {{commit}}
