@@ -138,26 +138,27 @@ pub async fn command_fetch_release_distributions(args: &ArgMatches) -> Result<()
     let mut runs: Vec<octocrab::models::workflows::Run> = vec![];
 
     for workflow_id in workflow_ids {
+        let commit = args
+            .get_one::<String>("commit")
+            .expect("commit should be defined");
+        let workflow_name = workflow_names
+            .get(&workflow_id)
+            .expect("should have workflow name");
+
         runs.push(
             workflows
-                .list_runs(format!("{}", workflow_id))
+                .list_runs(format!("{workflow_id}"))
                 .event("push")
                 .status("success")
                 .send()
                 .await?
                 .into_iter()
                 .find(|run| {
-                    run.head_sha.as_str()
-                        == args
-                            .get_one::<String>("commit")
-                            .expect("commit should be defined")
+                    run.head_sha.as_str() == commit
                 })
                 .ok_or_else(|| {
                     anyhow!(
-                        "could not find workflow run for commit for workflow {}",
-                        workflow_names
-                            .get(&workflow_id)
-                            .expect("should have workflow name")
+                        "could not find workflow run for commit {commit} for workflow {workflow_name}",
                     )
                 })?,
         );
@@ -206,13 +207,15 @@ pub async fn command_fetch_release_distributions(args: &ArgMatches) -> Result<()
 
             // Iterate over `RELEASE_TRIPLES` in reverse-order to ensure that if any triple is a
             // substring of another, the longest match is used.
-            if let Some((triple, release)) = RELEASE_TRIPLES.iter().rev().find_map(|(triple, release)| {
-                if name.contains(triple) {
-                    Some((triple, release))
-                } else {
-                    None
-                }
-            }) {
+            if let Some((triple, release)) =
+                RELEASE_TRIPLES.iter().rev().find_map(|(triple, release)| {
+                    if name.contains(triple) {
+                        Some((triple, release))
+                    } else {
+                        None
+                    }
+                })
+            {
                 let stripped_name = if let Some(s) = name.strip_suffix(".tar.zst") {
                     s
                 } else {
