@@ -55,11 +55,16 @@ release-set-latest-release tag:
   }
   EOF
 
-  git add latest-release.json
-  git commit -m 'set latest release to {{tag}}'
-  git switch main
+  # If the branch is dirty, we add and commit.
+  if ! git diff --quiet; then
+    git add latest-release.json
+    git commit -m 'set latest release to {{tag}}'
+    git switch main
 
-  git push origin latest-release
+    git push origin latest-release
+  else
+    echo "No changes to commit."
+  fi
 
 # Create a GitHub release, if it doesn't already exist.
 release-create commit tag:
