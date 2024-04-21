@@ -44,10 +44,11 @@ jobs:
       - name: Create tag
         run: git tag ${{ github.event.inputs.tag }} ${{ github.event.inputs.sha }}
 
-        # Push the tag to GitHub.
+      # Push the tag to GitHub.
       - name: Push tag
         run: git push origin ${{ github.event.inputs.tag }}
 
+      # Create a GitHub release.
       - name: Create GitHub Release
         if: ${{ github.event.inputs.dry-run == 'false' }}
         uses: ncipollo/release-action@v1
@@ -56,6 +57,8 @@ jobs:
           name: ${{ github.event.inputs.tag }}
           prerelease: true
           body: TBD
+          allowUpdates: true
+          updateOnlyUnreleased: true
 
       # Perform a release in dry-run mode.
       - run: just release-dry-run ${{ secrets.GITHUB_TOKEN }} ${{ github.event.inputs.sha }} ${{ github.event.inputs.tag }}
