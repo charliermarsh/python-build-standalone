@@ -36,6 +36,10 @@ jobs:
           git config --global user.name "$GITHUB_ACTOR"
           git config --global user.email "$GITHUB_ACTOR@users.noreply.github.com"
 
+      # Fetch the commit so that it exists locally.
+      - name: Fetch commit
+        run: git fetch origin ${{ github.event.inputs.sha }}
+
       # Associate the commit with the tag.
       - name: Create tag
         run: git tag ${{ github.event.inputs.tag }} ${{ github.event.inputs.sha }}
