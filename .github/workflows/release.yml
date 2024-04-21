@@ -31,6 +31,11 @@ jobs:
 
       - uses: extractions/setup-just@v2
 
+      - name: "Configure Git identity."
+        run: |
+          git config --global user.name "$GITHUB_ACTOR"
+          git config --global user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
       # Perform a release in dry-run mode.
       - run: just release-dry-run ${{ secrets.GITHUB_TOKEN }} ${{ github.event.inputs.sha }} ${{ github.event.inputs.tag }}
         if: ${{ github.event.inputs.dry-run == 'true' }}
