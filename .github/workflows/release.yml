@@ -31,21 +31,30 @@ jobs:
 
       - uses: extractions/setup-just@v2
 
-      - name: "Configure Git identity."
+      # Perform a release in dry-run mode.
+      - run: just release-dry-run ${{ secrets.GITHUB_TOKEN }} ${{ github.event.inputs.sha }} ${{ github.event.inputs.tag }}
+        if: ${{ github.event.inputs.dry-run == 'true' }}
+
+      # Create the release itself.
+      - name: Configure Git identity
+        if: ${{ github.event.inputs.dry-run == 'false' }}
         run: |
           git config --global user.name "$GITHUB_ACTOR"
           git config --global user.email "$GITHUB_ACTOR@users.noreply.github.com"
 
       # Fetch the commit so that it exists locally.
       - name: Fetch commit
+        if: ${{ github.event.inputs.dry-run == 'false' }}
         run: git fetch origin ${{ github.event.inputs.sha }}
 
       # Associate the commit with the tag.
       - name: Create tag
+        if: ${{ github.event.inputs.dry-run == 'false' }}
         run: git tag ${{ github.event.inputs.tag }} ${{ github.event.inputs.sha }}
 
       # Push the tag to GitHub.
       - name: Push tag
+        if: ${{ github.event.inputs.dry-run == 'false' }}
         run: git push origin ${{ github.event.inputs.tag }}
 
       # Create a GitHub release.
@@ -60,10 +69,6 @@ jobs:
           allowUpdates: true
           updateOnlyUnreleased: true
 
-      # Perform a release in dry-run mode.
-      - run: just release-dry-run ${{ secrets.GITHUB_TOKEN }} ${{ github.event.inputs.sha }} ${{ github.event.inputs.tag }}
-        if: ${{ github.event.inputs.dry-run == 'true' }}
-
-      # Perform a release, creating a GitHub release and uploading the relevant artifacts.
+      # Uploading the relevant artifact to the GitHub release.
       - run: just release-run ${{ secrets.GITHUB_TOKEN }} ${{ github.event.inputs.sha }} ${{ github.event.inputs.tag }}
         if: ${{ github.event.inputs.dry-run == 'false' }}
